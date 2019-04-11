@@ -56,7 +56,7 @@ public slots:
     void updateCurrentVoltageText(double v);
     void mouseDblClik(QMouseEvent *e);
     void mousePressedGraph(QMouseEvent* e);
-
+    void clearGraph();
 
 
 
@@ -75,7 +75,6 @@ private:
     YVoltage *_volt;
     QFuture<void> watch;
     bool run,_now;
-    QTimer timerVolt;
     QTime time;
     double _lastTime;
     double _decalage;

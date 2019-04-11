@@ -22,6 +22,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(this,       SIGNAL(voltageChange(double)),      this, SLOT(voltageChanged(double)));
     connect(ui->now,    SIGNAL(clicked(bool)),              this, SLOT(now()));
     connect(ui->record, SIGNAL(clicked(bool)),              this, SLOT(recorded(bool)));
+    connect(ui->clear,  SIGNAL(clicked(bool)),              this, SLOT(clearGraph()));
     connect(ui->graph,  SIGNAL(mousePress(QMouseEvent*)),   this, SLOT(mousePressedGraph(QMouseEvent*)));
     connect(ui->graph,  SIGNAL(mouseMove(QMouseEvent*)),    this, SLOT(mousePressedGraph(QMouseEvent*)));
     connect(ui->graph, SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(mouseDblClik(QMouseEvent*)));
@@ -60,9 +61,8 @@ void MainWindow::voltageChanged(double v)
         {
             t->addData(key, v);
             _lastTime = key;
-            currentVoltageTracer->setGraphKey(g->xAxis->range().upper);
-            updateRangeYAxis(QCPRange());
-           // g->replot();
+            currentVoltageTracer->setGraphKey((t->data().data()->end()-1)->key);
+            // g->replot();
             if(_now)
                 now();
         }
@@ -96,7 +96,10 @@ void MainWindow::mousePressedGraph(QMouseEvent *e)
         return;
 
     if(_now && (e->type()|QMouseEvent::MouseMove) && (e->buttons()&Qt::LeftButton))
+    {
         _now = false;
+        ui->now->setChecked(false);
+    }
 
     if((e->type() | QMouseEvent::MouseButtonPress | QMouseEvent::MouseMove) &&
             e->buttons() & Qt::RightButton){
@@ -209,6 +212,11 @@ void MainWindow::showMeasureOutside()
 void MainWindow::now(){
     _now = true;
 
+    _now = ui->now->isChecked();
+
+    if(!_now)
+        return;
+
     QCPRange range = g->xAxis->range();
     //range.upper = (t->data().data()->end()-1)->key+1;
     //Test en %
@@ -235,12 +243,33 @@ void MainWindow::recorded(bool b)
     }
 }
 
+void MainWindow::clearGraph()
+{
+    t->data().data()->clear();
+    g->xAxis->setRange(0 ,8,Qt::AlignCenter);
+    marker1->setVisible(false);
+    marker2->setVisible(false);
+    bracket->setVisible(false);
+    timeMeasure->setVisible(false);
+    textMeasure->setVisible(false);
+    currentVoltageTracer->setVisible(false);
+    voltageTracerArrow->setVisible(false);
+
+    recorded(ui->record->isChecked());
+    g->replot();
+}
+
 void MainWindow::updateCurrentVoltageText(double v)
 {
-
     if(v == -100)
         currentVoltageText->setText("Tension: ?");
     else{
+
+        if(!currentVoltageTracer->visible() && t->dataCount()!=0 ){
+            currentVoltageTracer->setVisible(true);
+            voltageTracerArrow->setVisible(true);
+        }
+
         qreal positionPixelPoint = (currentVoltageTracer->position->pixelPosition().y() - (t->valueAxis()->axisRect()->top()-1))/(qreal)t->valueAxis()->axisRect()->height();
         if(currentVoltageText->position->coords().y() != 0.9 && positionPixelPoint<=0.25){
             currentVoltageText->position->setCoords(1,0.9);
@@ -278,7 +307,7 @@ void MainWindow::initPlot()
     g->xAxis->setTickLength(10);
 
 
-  /*  for(int i=0; i<10 ;i++)
+    for(int i=0; i<10 ;i++)
         t->addData(i, QRandomGenerator::global()->bounded(1,5));
 
     for(int i=0; i<80 ;i++)
@@ -291,7 +320,7 @@ void MainWindow::initPlot()
     t->rescaleValueAxis();
     g->yAxis->setRangeLower(0);
 
-*/
+
     g->xAxis->setRange((t->data().data()->end()-1)->key ,8,Qt::AlignRight);
 
 
