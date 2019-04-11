@@ -9,6 +9,7 @@
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
 #include <QCloseEvent>
+#include <QMouseEvent>
 #include <qcustomplot.h>
 #include <QTimer>
 
@@ -17,6 +18,10 @@ class MainWindow;
 }
 
 #define MIN_ZOOM_X 2.0
+static QColor s_couleurMeasure(32,155,230);
+static QString s_formatTime("HH'h' mm'm' ss's' zzz'ms'");
+static QFont s_fontUtsaah = QFont("Utsaah", 12);
+
 
 class MainWindow : public QMainWindow
 {
@@ -27,6 +32,8 @@ private:
     static void deviceRemoved(YModule *m);
     static void CBVolt(YVoltage* f, const string &v);
     void initPlot();
+    void drawMeasure(qreal position);
+    void showMeasureOutside();
 
 public:
     enum idDevice{idYKnob      = 10,
@@ -38,6 +45,8 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+
+
 public slots:
     void voltageChanged(double v);
     void borneRangeXAxis(QCPRange newR, QCPRange oldR);
@@ -45,6 +54,11 @@ public slots:
     void now();
     void recorded(bool b);
     void updateCurrentVoltageText(double v);
+    void mouseDblClik(QMouseEvent *e);
+    void mousePressedGraph(QMouseEvent* e);
+
+
+
 
 protected:
     void closeEvent(QCloseEvent*);
@@ -66,9 +80,11 @@ private:
     double _lastTime;
     double _decalage;
 
-    QCPItemTracer *currentVoltageTracer;
-    QCPItemText *currentVoltageText;
+    QCPItemTracer *currentVoltageTracer,*marker1,*marker2,*markerSelected;
+    QCPItemText *currentVoltageText,*timeMeasure,*textMeasure;
     QCPItemCurve *voltageTracerArrow;
+    QCPItemBracket *bracket;
+    QCPItemPosition *posBracket;
 
 };
 
