@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->clear,  SIGNAL(clicked(bool)),              this, SLOT(clearGraph()));
     connect(ui->graph,  SIGNAL(mousePress(QMouseEvent*)),   this, SLOT(mousePressedGraph(QMouseEvent*)));
     connect(ui->graph,  SIGNAL(mouseMove(QMouseEvent*)),    this, SLOT(mousePressedGraph(QMouseEvent*)));
-    connect(ui->graph, SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(mouseDblClik(QMouseEvent*)));
+    connect(ui->graph,  SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(mouseDblClik(QMouseEvent*)));
 
     yDisableExceptions();
     yRegisterDeviceArrivalCallback(deviceArrived);
@@ -55,18 +55,23 @@ void MainWindow::voltageChanged(double v)
 {
     updateCurrentVoltageText(v);
     if(ui->record->isChecked()){
+        qDebug() << " rec";
         double key = time.elapsed() /1000.0;
         key += _decalage;
+
+        qDebug() << key << _decalage<< _lastTime;
         if(key - _lastTime > 0.02)
         {
+            qDebug() << "add data";
             t->addData(key, v);
             _lastTime = key;
             currentVoltageTracer->setGraphKey((t->data().data()->end()-1)->key);
-            // g->replot();
+            //g->replot();
             if(_now)
                 now();
         }
     }
+
 }
 
 void MainWindow::closeEvent(QCloseEvent*)
@@ -232,10 +237,11 @@ void MainWindow::recorded(bool b)
     if(b){
         time = QTime(0,0,0,0);
         if(t->data().data()->isEmpty()){
-            //qDebug() << "FIRST START";
+            qDebug() << "FIRST START";
             _lastTime = 0;
+            _decalage = 0;
         }else{
-            //qDebug() << "Last time " << _lastTime;
+            qDebug() << "Last time " << _lastTime;
         }
         time.start();
     }else{
@@ -254,9 +260,8 @@ void MainWindow::clearGraph()
     textMeasure->setVisible(false);
     currentVoltageTracer->setVisible(false);
     voltageTracerArrow->setVisible(false);
-
-    recorded(ui->record->isChecked());
     g->replot();
+    recorded(ui->record->isChecked());
 }
 
 void MainWindow::updateCurrentVoltageText(double v)
@@ -264,7 +269,6 @@ void MainWindow::updateCurrentVoltageText(double v)
     if(v == -100)
         currentVoltageText->setText("Tension: ?");
     else{
-
         if(!currentVoltageTracer->visible() && t->dataCount()!=0 ){
             currentVoltageTracer->setVisible(true);
             voltageTracerArrow->setVisible(true);
@@ -307,7 +311,7 @@ void MainWindow::initPlot()
     g->xAxis->setTickLength(10);
 
 
-    for(int i=0; i<10 ;i++)
+    /* for(int i=0; i<10 ;i++)
         t->addData(i, QRandomGenerator::global()->bounded(1,5));
 
     for(int i=0; i<80 ;i++)
@@ -319,9 +323,9 @@ void MainWindow::initPlot()
     t->rescaleKeyAxis();
     t->rescaleValueAxis();
     g->yAxis->setRangeLower(0);
+*/
 
-
-    g->xAxis->setRange((t->data().data()->end()-1)->key ,8,Qt::AlignRight);
+    g->xAxis->setRange((t->data().data()->end()-1)->key ,8,Qt::AlignCenter);
 
 
     /*Dot red to visualize current value*/
@@ -334,6 +338,7 @@ void MainWindow::initPlot()
     currentVoltageTracer->setPen(QPen(Qt::red));
     currentVoltageTracer->setBrush(Qt::red);
     currentVoltageTracer->setSize(7);
+    currentVoltageTracer->setVisible(false);
 
     // add label for group tracer:
     currentVoltageText = new QCPItemText(g);
@@ -358,6 +363,7 @@ void MainWindow::initPlot()
     voltageTracerArrow->setHead(QCPLineEnding::esSpikeArrow);
     QCPLineEnding underlineText(QCPLineEnding::esBar, (currentVoltageText->right->pixelPosition().x()-currentVoltageText->left->pixelPosition().x())*1.2);
     voltageTracerArrow->setTail(underlineText);
+    voltageTracerArrow->setVisible(false);
 
     // now create measure
     marker1 = new QCPItemTracer(g);
