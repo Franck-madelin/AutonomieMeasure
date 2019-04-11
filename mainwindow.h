@@ -18,9 +18,10 @@ class MainWindow;
 }
 
 #define MIN_ZOOM_X 2.0
-static QColor s_couleurMeasure(32,155,230);
-static QString s_formatTime("HH'h' mm'm' ss's' zzz'ms'");
-static QFont s_fontUtsaah = QFont("Utsaah", 12);
+static QString  s_Address_IP = "192.168.1.10";
+static QColor   s_couleurMeasure(32,155,230);
+static QString  s_formatTime("HH'h' mm'm' ss's' zzz'ms'");
+static QFont    s_fontUtsaah = QFont("Utsaah", 12);
 
 
 class MainWindow : public QMainWindow
@@ -83,6 +84,7 @@ private:
     QCPItemText *currentVoltageText,*timeMeasure,*textMeasure;
     QCPItemCurve *voltageTracerArrow;
     QCPItemBracket *bracket;
+    QCPItemText *leftBracket,*rightBracket;
     QCPItemPosition *posBracket;
 
 };

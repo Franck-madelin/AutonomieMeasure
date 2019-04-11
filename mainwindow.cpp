@@ -31,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent) :
     yRegisterDeviceArrivalCallback(deviceArrived);
     yRegisterDeviceRemovalCallback(deviceRemoved);
 
-    string add = "192.168.1.10";
+    string add = s_Address_IP.toStdString();
     string err;
     if (yRegisterHub(add, err) != YAPI_SUCCESS)
     {
@@ -55,14 +55,11 @@ void MainWindow::voltageChanged(double v)
 {
     updateCurrentVoltageText(v);
     if(ui->record->isChecked()){
-        qDebug() << " rec";
         double key = time.elapsed() /1000.0;
         key += _decalage;
-
-        qDebug() << key << _decalage<< _lastTime;
         if(key - _lastTime > 0.02)
         {
-            qDebug() << "add data";
+            //qDebug() << "add data";
             t->addData(key, v);
             _lastTime = key;
             currentVoltageTracer->setGraphKey((t->data().data()->end()-1)->key);
@@ -90,6 +87,8 @@ void MainWindow::mouseDblClik(QMouseEvent *e)
         bracket->setVisible(false);
         timeMeasure->setVisible(false);
         textMeasure->setVisible(false);
+        leftBracket->setVisible(false);
+        rightBracket->setVisible(false);
 
         g->replot();
     }
@@ -150,14 +149,25 @@ void MainWindow::drawMeasure(qreal position)
                 posBracket->setCoords(0,0.1);
                 timeMeasure->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
                 timeMeasure->position->setCoords(0,-20);
+
+                leftBracket->setPositionAlignment(Qt::AlignBottom|Qt::AlignHCenter);
+                rightBracket->setPositionAlignment(Qt::AlignBottom|Qt::AlignHCenter);
+                leftBracket->position->setCoords(0,20);
+                rightBracket->position->setCoords(0,20);
             }
 
             if(marker1->position->key()<marker2->position->key()){
+                leftBracket->setText(QString("%1 V").arg(marker1->position->value(),0,'f',2));
+                rightBracket->setText(QString("%1 V").arg(marker2->position->value(),0,'f',2));
+
                 if(bracket->left->parentAnchorX()!=marker1->position){
                     bracket->left->setParentAnchorX(marker1->position);
                     bracket->right->setParentAnchorX(marker2->position);
                 }
             }else{
+                leftBracket->setText(QString("%1 V").arg(marker2->position->value(),0,'f',2));
+                rightBracket->setText(QString("%1 V").arg(marker1->position->value(),0,'f',2));
+
                 if(bracket->left->parentAnchorX()!=marker2->position){
                     bracket->left->setParentAnchorX(marker2->position);
                     bracket->right->setParentAnchorX(marker1->position);
@@ -169,25 +179,41 @@ void MainWindow::drawMeasure(qreal position)
                 posBracket->setCoords(0,0.8);
                 timeMeasure->setPositionAlignment(Qt::AlignBottom|Qt::AlignHCenter);
                 timeMeasure->position->setCoords(0,20);
+                leftBracket->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
+                rightBracket->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
+                leftBracket->position->setCoords(0,-20);
+                rightBracket->position->setCoords(0,-20);
             }
 
             if(marker1->position->key()>marker2->position->key()){
+                leftBracket->setText(QString("%1 V").arg(marker1->position->value(),0,'f',2));
+                rightBracket->setText(QString("%1 V").arg(marker2->position->value(),0,'f',2));
+
                 if(bracket->left->parentAnchorX()!=marker1->position){
                     bracket->left->setParentAnchorX(marker1->position);
                     bracket->right->setParentAnchorX(marker2->position);
                 }
             }else{
+                leftBracket->setText(QString("%1 V").arg(marker2->position->value(),0,'f',2));
+                rightBracket->setText(QString("%1 V").arg(marker1->position->value(),0,'f',2));
+
+
                 if(bracket->left->parentAnchorX()!=marker2->position){
                     bracket->left->setParentAnchorX(marker2->position);
                     bracket->right->setParentAnchorX(marker1->position);
                 }
+
             }
         }
+
         if(!bracket->visible())
+        {
             bracket->setVisible(true);
+            leftBracket->setVisible(true);
+            rightBracket->setVisible(true);
+        }
 
         //Compute time measured
-
         double interval = qAbs(marker1->position->key()-marker2->position->key());
         QTime timerValueMeasured(0,0,0,0);
         timerValueMeasured = timerValueMeasured.addMSecs(interval*1000.0);
@@ -237,7 +263,7 @@ void MainWindow::recorded(bool b)
     if(b){
         time = QTime(0,0,0,0);
         if(t->data().data()->isEmpty()){
-            qDebug() << "FIRST START";
+            //qDebug() << "FIRST START";
             _lastTime = 0;
             _decalage = 0;
         }else{
@@ -252,7 +278,8 @@ void MainWindow::recorded(bool b)
 void MainWindow::clearGraph()
 {
     t->data().data()->clear();
-    g->xAxis->setRange(0 ,8,Qt::AlignCenter);
+    g->xAxis->setRange(0 ,8, Qt::AlignCenter);
+    g->yAxis->setRange(0, 6);
     marker1->setVisible(false);
     marker2->setVisible(false);
     bracket->setVisible(false);
@@ -260,6 +287,9 @@ void MainWindow::clearGraph()
     textMeasure->setVisible(false);
     currentVoltageTracer->setVisible(false);
     voltageTracerArrow->setVisible(false);
+    leftBracket->setVisible(false);
+    rightBracket->setVisible(false);
+
     g->replot();
     recorded(ui->record->isChecked());
 }
@@ -310,8 +340,8 @@ void MainWindow::initPlot()
     g->xAxis->setTicker(timeTicker);
     g->xAxis->setTickLength(10);
 
-
-    /* for(int i=0; i<10 ;i++)
+/*
+    for(int i=0; i<10 ;i++)
         t->addData(i, QRandomGenerator::global()->bounded(1,5));
 
     for(int i=0; i<80 ;i++)
@@ -323,8 +353,8 @@ void MainWindow::initPlot()
     t->rescaleKeyAxis();
     t->rescaleValueAxis();
     g->yAxis->setRangeLower(0);
-*/
 
+*/
     g->xAxis->setRange((t->data().data()->end()-1)->key ,8,Qt::AlignCenter);
 
 
@@ -409,14 +439,39 @@ void MainWindow::initPlot()
     timeMeasure->setColor(s_couleurMeasure);
     timeMeasure->setVisible(false);
 
+    //Add Voltage indicator next to extremity bracket
+    leftBracket = new QCPItemText(g);
+    leftBracket->position->setParentAnchor(bracket->left);
+    leftBracket->setTextAlignment(Qt::AlignCenter);
+    s_fontUtsaah.setBold(false);
+    s_fontUtsaah.setPointSize(9);
+    leftBracket->setFont(s_fontUtsaah);
+    leftBracket->setColor(s_couleurMeasure);
+    leftBracket->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
+    leftBracket->position->setCoords(0,-20);
+    leftBracket->setVisible(false);
+
+    rightBracket = new QCPItemText(g);
+    rightBracket->position->setParentAnchor(bracket->right);
+    rightBracket->setTextAlignment(Qt::AlignCenter);
+    rightBracket->setFont(s_fontUtsaah);
+    rightBracket->setColor(s_couleurMeasure);
+    rightBracket->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
+    rightBracket->position->setCoords(0,-20);
+    rightBracket->setVisible(false);
+
+
     textMeasure = new QCPItemText(g);
     textMeasure->position->setType(QCPItemPosition::ptAxisRectRatio);
-    textMeasure->position->setCoords(0.3,0.9);
+    textMeasure->position->setCoords(0.2,0.9);
     textMeasure->setText("Temps : ?");
     textMeasure->setTextAlignment(Qt::AlignRight);
+    s_fontUtsaah.setBold(true);
+    s_fontUtsaah.setPointSize(12);
     textMeasure->setFont(s_fontUtsaah);
     textMeasure->setColor(s_couleurMeasure);
     textMeasure->setVisible(false);
+
 
     g->replot();
 
