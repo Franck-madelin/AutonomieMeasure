@@ -205,7 +205,6 @@ void MainWindow::drawMeasure(qreal position)
                     bracket->left->setParentAnchorX(marker2->position);
                     bracket->right->setParentAnchorX(marker1->position);
                 }
-
             }
         }
 
@@ -370,14 +369,17 @@ void MainWindow::updateCurrentVoltageText(double v)
 void MainWindow::initPlot()
 {
     t = g->addGraph();// Voltage
-    t->setPen(QPen(Qt::green));
+    t->setPen(QPen(s_colorGraph,2));
 
     g->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
     QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
     timeTicker->setTimeFormat("%hh %mm %ss");
+    timeTicker->setTickCount(6);
     g->xAxis->setTicker(timeTicker);
     g->xAxis->setTickLength(10);
+
+    qDebug() << timeTicker->tickCount();
 
     /*
     for(int i=0; i<10 ;i++)
