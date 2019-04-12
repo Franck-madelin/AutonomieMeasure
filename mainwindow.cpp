@@ -14,12 +14,15 @@ MainWindow::MainWindow(QWidget *parent) :
     _now = true;
     _moteur = nullptr;
     _volt = nullptr;
+    timerClearBeacon.setSingleShot(true);
+    timerClearBeacon.setInterval(500);
 
     ui->record->setEnabled(false);
 
     initPlot();
 
     connect(this,       SIGNAL(voltageChange(double)),      this, SLOT(voltageChanged(double)));
+    connect(this,       SIGNAL(beaconChange(bool)),         this, SLOT(moteurBeaconChanged(bool)));
     connect(ui->now,    SIGNAL(clicked(bool)),              this, SLOT(now()));
     connect(ui->record, SIGNAL(clicked(bool)),              this, SLOT(recorded(bool)));
     connect(ui->clear,  SIGNAL(clicked(bool)),              this, SLOT(clearGraph()));
@@ -266,17 +269,53 @@ void MainWindow::recorded(bool b)
             //qDebug() << "FIRST START";
             _lastTime = 0;
             _decalage = 0;
-        }else{
-            qDebug() << "Last time " << _lastTime;
         }
+        ui->now->setChecked(true);
+        now();
+        _moteur->module()->setBeacon(Y_BEACON_ON);
         time.start();
     }else{
         _decalage = _lastTime;
+        _moteur->module()->setBeacon(Y_BEACON_OFF);
+    }
+}
+
+void MainWindow::moteurBeaconChanged(bool b)
+{
+    if(!b && timerClearBeacon.isActive())
+    {
+        _moteur->module()->muteValueCallbacks();
+        ui->record->setChecked(false);
+        clearGraph();
+        _moteur->module()->unmuteValueCallbacks();
+        return;
+    }
+
+    if(b)
+        timerClearBeacon.start(500);
+
+
+    if(b && !ui->record->isChecked()) // Start recording
+    {
+        ui->record->setChecked(true);
+        recorded(true);
+    }else if(!b && ui->record->isChecked()){ // Pause recording
+        ui->record->setChecked(false);
+        recorded(false);
     }
 }
 
 void MainWindow::clearGraph()
 {
+    if(t->dataCount()==0)
+        return;
+
+    if(sender() != this){
+        int rep = QMessageBox::warning(this, "Suppression graphique !", "Etes vous sur de supprimer le graphique ?",QMessageBox::Yes, QMessageBox::No);
+        if(rep!=QMessageBox::Yes)
+            return;
+    }
+
     t->data().data()->clear();
     g->xAxis->setRange(0 ,8, Qt::AlignCenter);
     g->yAxis->setRange(0, 6);
@@ -340,7 +379,7 @@ void MainWindow::initPlot()
     g->xAxis->setTicker(timeTicker);
     g->xAxis->setTickLength(10);
 
-/*
+    /*
     for(int i=0; i<10 ;i++)
         t->addData(i, QRandomGenerator::global()->bounded(1,5));
 
@@ -503,6 +542,10 @@ void MainWindow::borneRangeXAxis(QCPRange newR, QCPRange oldR)
     if(newR.upper < 0)
         g->xAxis->setRange(oldR);
 
+    if(_now){
+        now();
+        return;
+    }
 
     g->yAxis->setRangeLower(0);
 
@@ -533,8 +576,9 @@ void MainWindow::deviceArrived(YModule *m)
         _mainWindow->_volt = yFindVoltage(m->get_friendlyName());
         qDebug() << "[YOCTO] Sonde de tension trouvée ?" << _mainWindow->_volt;
         _mainWindow->ui->record->setEnabled(true);
-        _mainWindow->_volt->setResolution(0.01);
+        _mainWindow->_volt->setResolution(0.001);
         _mainWindow->_volt->registerValueCallback(CBVolt);
+        m->registerBeaconCallback(CBMotteurBeacon);
         break;
     default:
         break;
@@ -565,7 +609,15 @@ void MainWindow::CBVolt(YVoltage* f, const string &v)
     emit _mainWindow->voltageChange(atof(v.data()));
 }
 
+void MainWindow::CBMotteurBeacon(YModule *m , int i)
+{
+    Q_UNUSED(m)
+    emit _mainWindow->beaconChange((i==1)?true:false);
+}
+
 MainWindow::~MainWindow()
 {
+    _moteur->module()->muteValueCallbacks();
+    _moteur->module()->setBeacon(Y_BEACON_OFF);
     delete ui;
 }

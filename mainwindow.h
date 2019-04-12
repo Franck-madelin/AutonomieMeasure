@@ -12,6 +12,7 @@
 #include <QMouseEvent>
 #include <qcustomplot.h>
 #include <QTimer>
+#include <QMessageBox>
 
 namespace Ui {
 class MainWindow;
@@ -32,12 +33,13 @@ private:
     static void deviceArrived(YModule *m);
     static void deviceRemoved(YModule *m);
     static void CBVolt(YVoltage* f, const string &v);
+    static void CBMotteurBeacon(YModule *m , int i);
     void initPlot();
     void drawMeasure(qreal position);
     void showMeasureOutside();
 
 public:
-    enum idDevice{idYKnob      = 10,
+    enum idDevice{idYKnob       = 10,
                   idYWatchdog   = 51,
                   idYClusterLed = 101,
                   idY3d         = 106,
@@ -58,14 +60,14 @@ public slots:
     void mouseDblClik(QMouseEvent *e);
     void mousePressedGraph(QMouseEvent* e);
     void clearGraph();
-
-
+    void moteurBeaconChanged(bool b);
 
 protected:
     void closeEvent(QCloseEvent*);
 
 signals:
     void voltageChange(double v);
+    void beaconChange(bool b);
 
 private:
     QCustomPlot *g;
@@ -79,6 +81,7 @@ private:
     QTime time;
     double _lastTime;
     double _decalage;
+    QTimer timerClearBeacon;
 
     QCPItemTracer *currentVoltageTracer,*marker1,*marker2,*markerSelected;
     QCPItemText *currentVoltageText,*timeMeasure,*textMeasure;
@@ -86,6 +89,7 @@ private:
     QCPItemBracket *bracket;
     QCPItemText *leftBracket,*rightBracket;
     QCPItemPosition *posBracket;
+
 
 };
 
