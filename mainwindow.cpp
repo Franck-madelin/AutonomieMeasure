@@ -16,6 +16,8 @@ MainWindow::MainWindow(QWidget *parent) :
     _volt = nullptr;
     timerClearBeacon.setSingleShot(true);
     timerClearBeacon.setInterval(500);
+    menuRemove = ui->menuRemove;
+    menuRemove->setVisible(false);
 
     ui->record->setEnabled(false);
 
@@ -26,9 +28,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->now,    SIGNAL(clicked(bool)),              this, SLOT(now()));
     connect(ui->record, SIGNAL(clicked(bool)),              this, SLOT(recorded(bool)));
     connect(ui->clear,  SIGNAL(clicked(bool)),              this, SLOT(clearGraph()));
-    connect(ui->graph,  SIGNAL(mousePress(QMouseEvent*)),   this, SLOT(mousePressedGraph(QMouseEvent*)));
-    connect(ui->graph,  SIGNAL(mouseMove(QMouseEvent*)),    this, SLOT(mousePressedGraph(QMouseEvent*)));
-    connect(ui->graph,  SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(mouseDblClik(QMouseEvent*)));
+    connect(g,          SIGNAL(mousePress(QMouseEvent*)),   this, SLOT(mousePressedGraph(QMouseEvent*)));
+    connect(g,          SIGNAL(mouseMove(QMouseEvent*)),    this, SLOT(mousePressedGraph(QMouseEvent*)));
+    connect(g,          SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(mouseDblClik(QMouseEvent*)));
+
+    connect(ui->actionInsertLegend, SIGNAL(triggered(bool)), this, SLOT(insertLegend()));
 
     yDisableExceptions();
     yRegisterDeviceArrivalCallback(deviceArrived);
@@ -36,22 +40,69 @@ MainWindow::MainWindow(QWidget *parent) :
 
     string add = s_Address_IP.toStdString();
     string err;
-    if (yRegisterHub(add, err) != YAPI_SUCCESS)
+     if (yRegisterHub(add, err) == YAPI_SUCCESS)
     {
-        qDebug() << "API NOT REGISTRED";
-        return;
-    }
+        qDebug() << "API REGISTRED";
 
-    watch = QtConcurrent::run([this](){
-        run = true;
-        string err;
-        while(run)
-        {
-            //qDebug() << "UP YOCTO";
-            yUpdateDeviceList(err);
-            ySleep(800,err);
-        }
-    });
+        watch = QtConcurrent::run([this](){
+            run = true;
+            string err;
+            while(run)
+            {
+                //qDebug() << "UP YOCTO";
+                yUpdateDeviceList(err);
+                ySleep(800,err);
+            }
+        });
+    }else{
+        qDebug() << "API NOT REGISTRED";
+    }
+}
+
+void MainWindow::insertLegend()
+{
+    if(t->dataCount()==0)
+        return;
+
+    QString input = QInputDialog::getText(this, "Add Text to Legend", "Ajouter un texte à la légende:");
+
+    if(input.isEmpty())
+        return;
+
+    QCPTextElement *tmp = new QCPTextElement(g);
+    tmp->setText(input);
+    tmp->setFont(s_fontUtsaah);
+    tmp->setTextColor(s_colorGraph);
+    tmp->setTextFlags(Qt::AlignCenter);
+    tmp->setLayer(g->legend->layer());
+
+    if(!g->legend->addElement(g->legend->elementCount(),0,tmp))
+        return;
+
+    QAction* item = new QAction(menuRemove);
+    item->setText((input.length()>8)?input.left(8)+"...":input);
+    item->setData(QVariant::fromValue<QCPTextElement*>(tmp));
+    connect(item, SIGNAL(triggered(bool)), this, SLOT(removeItemLegend()));
+
+    menuRemove->addAction(item);
+
+    g->legend->setVisible(true);
+    g->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
+    g->replot();
+}
+
+void MainWindow::removeItemLegend()
+{
+
+    QAction * a = static_cast<QAction*>(sender());
+    QCPTextElement *item = a->data().value<QCPTextElement*>();
+    g->legend->remove(item);
+    menuRemove->removeAction(a);
+
+    if(menuRemove->actions().size() == 0)
+        g->legend->setVisible(false);
+
+    g->replot();
 }
 
 void MainWindow::voltageChanged(double v)
@@ -72,12 +123,6 @@ void MainWindow::voltageChanged(double v)
         }
     }
 
-}
-
-void MainWindow::closeEvent(QCloseEvent*)
-{
-    run = false;
-    watch.waitForFinished();
 }
 
 // double right click to clear measure
@@ -369,7 +414,10 @@ void MainWindow::updateCurrentVoltageText(double v)
 void MainWindow::initPlot()
 {
     t = g->addGraph();// Voltage
+    t->setName("Voltage");
     t->setPen(QPen(s_colorGraph,2));
+    g->legend->removeAt(0);
+    g->legend->setBorderPen(QPen(Qt::darkGreen));
 
     g->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
@@ -379,9 +427,6 @@ void MainWindow::initPlot()
     g->xAxis->setTicker(timeTicker);
     g->xAxis->setTickLength(10);
 
-    qDebug() << timeTicker->tickCount();
-
-    /*
     for(int i=0; i<10 ;i++)
         t->addData(i, QRandomGenerator::global()->bounded(1,5));
 
@@ -395,7 +440,6 @@ void MainWindow::initPlot()
     t->rescaleValueAxis();
     g->yAxis->setRangeLower(0);
 
-*/
     g->xAxis->setRange((t->data().data()->end()-1)->key ,8,Qt::AlignCenter);
 
 
@@ -503,7 +547,7 @@ void MainWindow::initPlot()
 
 
     textMeasure = new QCPItemText(g);
-    textMeasure->position->setType(QCPItemPosition::ptAxisRectRatio);
+    textMeasure->position->setType(QCPItemPosition::ptViewportRatio);
     textMeasure->position->setCoords(0.2,0.9);
     textMeasure->setText("Temps : ?");
     textMeasure->setTextAlignment(Qt::AlignRight);
@@ -546,11 +590,11 @@ void MainWindow::borneRangeXAxis(QCPRange newR, QCPRange oldR)
 
     if(_now){
         now();
+        showMeasureOutside();
         return;
     }
 
     g->yAxis->setRangeLower(0);
-
     showMeasureOutside();
 }
 
@@ -617,9 +661,17 @@ void MainWindow::CBMotteurBeacon(YModule *m , int i)
     emit _mainWindow->beaconChange((i==1)?true:false);
 }
 
+void MainWindow::closeEvent(QCloseEvent*)
+{
+    run = false;
+    if(_moteur != nullptr){
+        _moteur->module()->muteValueCallbacks();
+        _moteur->module()->setBeacon(Y_BEACON_OFF);
+    }
+    watch.waitForFinished();
+}
+
 MainWindow::~MainWindow()
 {
-    _moteur->module()->muteValueCallbacks();
-    _moteur->module()->setBeacon(Y_BEACON_OFF);
     delete ui;
 }

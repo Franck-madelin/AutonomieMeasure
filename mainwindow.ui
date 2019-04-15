@@ -163,8 +163,36 @@
      <height>20</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuLegend">
+    <property name="title">
+     <string>Legend</string>
+    </property>
+    <widget class="QMenu" name="menuRemove">
+     <property name="title">
+      <string>Remove</string>
+     </property>
+    </widget>
+    <addaction name="actionInsertLegend"/>
+    <addaction name="menuRemove"/>
+   </widget>
+   <addaction name="menuLegend"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionInsertLegend">
+   <property name="text">
+    <string>Insert</string>
+   </property>
+  </action>
+  <action name="actionfgyhjbghuj">
+   <property name="text">
+    <string>fgyhjbghuj</string>
+   </property>
+  </action>
+  <action name="actiondfg">
+   <property name="text">
+    <string>dfg</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>

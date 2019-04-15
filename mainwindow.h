@@ -62,6 +62,8 @@ public slots:
     void mousePressedGraph(QMouseEvent* e);
     void clearGraph();
     void moteurBeaconChanged(bool b);
+    void insertLegend();
+    void removeItemLegend();
 
 protected:
     void closeEvent(QCloseEvent*);
@@ -83,6 +85,7 @@ private:
     double _lastTime;
     double _decalage;
     QTimer timerClearBeacon;
+    QMenu *menuRemove;
 
     QCPItemTracer *currentVoltageTracer,*marker1,*marker2,*markerSelected;
     QCPItemText *currentVoltageText,*timeMeasure,*textMeasure;
