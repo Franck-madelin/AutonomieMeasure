@@ -18,6 +18,7 @@ namespace Ui {
 class MainWindow;
 }
 
+//#define TEMPLATE // to fill graph to develop
 #define MIN_ZOOM_X 2.0
 static QString  s_Address_IP = "192.168.1.10";
 static QColor   s_couleurMeasure(32,155,230);
@@ -64,6 +65,7 @@ public slots:
     void moteurBeaconChanged(bool b);
     void insertLegend();
     void removeItemLegend();
+    void removeItemLegend(QList<QAction*> la);
     void save();
 
 protected:
@@ -94,8 +96,6 @@ private:
     QCPItemBracket *bracket;
     QCPItemText *leftBracket,*rightBracket;
     QCPItemPosition *posBracket;
-
-
 };
 
 #endif // MAINWINDOW_H

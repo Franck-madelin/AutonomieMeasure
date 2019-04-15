@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
     timerClearBeacon.setInterval(500);
     menuRemove = ui->menuRemove;
     menuRemove->setVisible(false);
+    ui->actionInsertLegend->setShortcut(Qt::Key_L);
 
     ui->record->setEnabled(false);
 
@@ -88,7 +89,7 @@ void MainWindow::insertLegend()
     menuRemove->addAction(item);
 
     g->legend->setVisible(true);
-    g->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignBottom|Qt::AlignRight);
+    g->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignBottom|Qt::AlignLeft);
     g->replot();
 }
 
@@ -104,6 +105,13 @@ void MainWindow::removeItemLegend()
         g->legend->setVisible(false);
 
     g->replot();
+}
+
+void MainWindow::removeItemLegend(QList<QAction*> la)
+{
+    foreach (QAction* a, la) {
+        a->triggered();
+    }
 }
 
 void MainWindow::save()
@@ -128,29 +136,38 @@ void MainWindow::save()
 
     myDir.setCurrent(path);
     QFile file(input+"_data.csv");
-    file.open(QIODevice::WriteOnly);
+
+    if(!file.open(QIODevice::WriteOnly))
+    {
+        QMessageBox::information(this, "File Open", "Le fichier est ouvert par un autre programe.");
+        return;
+    }
     QTextStream ts(&file);
 
 
     //Save file data raw
     QCPDataContainer<QCPGraphData> *data = t->data().data();
+    QCPDataContainer<QCPGraphData>::iterator it = data->begin();
 
-    /*   foreach (QVector<QCPGraphData> i, data->begin()) {
-        qDebug() << i;
-        //ts << d.key << ";" << d.value;
-        //endl(ts);
-    }*/
-
+    ts<<"ms;voltage;time\n";
+    QTime time;
+    while(it != data->end())
+    {
+        time=QTime(0,0,0,0);
+        time = time.addMSecs(it->key*1000.0);
+        qDebug() << it->key << it->value << time.toString(s_formatTime);
+        ts << it->key<<";"<<it->value << ";" <<time.toString(s_formatTime);
+        endl(ts);
+        it++;
+    }
+    ts.flush();
     file.close();
 
     file.setFileName(input+"_screenshot.jpg");
     file.open(QIODevice::WriteOnly);
     QPixmap pix = g->grab(g->rect());
-
     pix.save(&file,"jpg");
-
     file.close();
-
 }
 
 void MainWindow::voltageChanged(double v)
@@ -170,7 +187,6 @@ void MainWindow::voltageChanged(double v)
                 now();
         }
     }
-
 }
 
 // double right click to clear measure
@@ -185,7 +201,6 @@ void MainWindow::mouseDblClik(QMouseEvent *e)
         textMeasure->setVisible(false);
         leftBracket->setVisible(false);
         rightBracket->setVisible(false);
-
         g->replot();
     }
 }
@@ -195,7 +210,7 @@ void MainWindow::mousePressedGraph(QMouseEvent *e)
     if(t->dataCount() < 5)
         return;
 
-    if(_now && (e->type()|QMouseEvent::MouseMove) && (e->buttons()&Qt::LeftButton))
+    if(_now && (e->type()&QMouseEvent::MouseMove) && (e->buttons()&Qt::LeftButton))
     {
         _now = false;
         ui->now->setChecked(false);
@@ -411,6 +426,7 @@ void MainWindow::clearGraph()
     t->data().data()->clear();
     g->xAxis->setRange(0 ,8, Qt::AlignCenter);
     g->yAxis->setRange(0, 6);
+    removeItemLegend(menuRemove->actions());
     marker1->setVisible(false);
     marker2->setVisible(false);
     bracket->setVisible(false);
@@ -420,6 +436,7 @@ void MainWindow::clearGraph()
     voltageTracerArrow->setVisible(false);
     leftBracket->setVisible(false);
     rightBracket->setVisible(false);
+
 
     g->replot();
     recorded(ui->record->isChecked());
@@ -475,6 +492,8 @@ void MainWindow::initPlot()
     g->xAxis->setTicker(timeTicker);
     g->xAxis->setTickLength(10);
 
+
+#ifdef TEMPLATE
     for(int i=0; i<10 ;i++)
         t->addData(i, QRandomGenerator::global()->bounded(1,5));
 
@@ -489,7 +508,7 @@ void MainWindow::initPlot()
     g->yAxis->setRangeLower(0);
 
     g->xAxis->setRange((t->data().data()->end()-1)->key ,8,Qt::AlignCenter);
-
+#endif
 
     /*Dot red to visualize current value*/
     // add the phase tracer (red circle) which sticks to the graph data (and gets updated in bracketDataSlot by timer event):
@@ -636,11 +655,8 @@ void MainWindow::borneRangeXAxis(QCPRange newR, QCPRange oldR)
     if(newR.upper < 0)
         g->xAxis->setRange(oldR);
 
-    if(_now){
+    if(_now)
         now();
-        showMeasureOutside();
-        return;
-    }
 
     g->yAxis->setRangeLower(0);
     showMeasureOutside();
