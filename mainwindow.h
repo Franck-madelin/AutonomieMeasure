@@ -64,6 +64,7 @@ public slots:
     void moteurBeaconChanged(bool b);
     void insertLegend();
     void removeItemLegend();
+    void save();
 
 protected:
     void closeEvent(QCloseEvent*);

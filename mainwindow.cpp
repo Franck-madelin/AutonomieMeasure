@@ -28,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->now,    SIGNAL(clicked(bool)),              this, SLOT(now()));
     connect(ui->record, SIGNAL(clicked(bool)),              this, SLOT(recorded(bool)));
     connect(ui->clear,  SIGNAL(clicked(bool)),              this, SLOT(clearGraph()));
+    connect(ui->save,   SIGNAL(clicked(bool)),              this, SLOT(save()));
     connect(g,          SIGNAL(mousePress(QMouseEvent*)),   this, SLOT(mousePressedGraph(QMouseEvent*)));
     connect(g,          SIGNAL(mouseMove(QMouseEvent*)),    this, SLOT(mousePressedGraph(QMouseEvent*)));
     connect(g,          SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(mouseDblClik(QMouseEvent*)));
@@ -40,7 +41,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     string add = s_Address_IP.toStdString();
     string err;
-     if (yRegisterHub(add, err) == YAPI_SUCCESS)
+    if (yRegisterHub(add, err) == YAPI_SUCCESS)
     {
         qDebug() << "API REGISTRED";
 
@@ -87,7 +88,7 @@ void MainWindow::insertLegend()
     menuRemove->addAction(item);
 
     g->legend->setVisible(true);
-    g->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
+    g->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignBottom|Qt::AlignRight);
     g->replot();
 }
 
@@ -103,6 +104,53 @@ void MainWindow::removeItemLegend()
         g->legend->setVisible(false);
 
     g->replot();
+}
+
+void MainWindow::save()
+{
+    if(t->dataCount() == 0)
+        return;
+
+    QString input = QInputDialog::getText(this, "Save Data", "Entrer le nom :");
+
+    if(input.isEmpty())
+        return;
+
+    QString path = QString(QDir::homePath()+"/Desktop/Autonomie Measure/" + input);
+
+    QDir myDir(path);
+
+    if(myDir.exists())
+        if(QMessageBox::warning(this, "Already Exist", "Voulez vous remplacer ?", QMessageBox::Yes, QMessageBox::No) == QMessageBox::No)
+            return;
+
+    QDir().mkpath(path);
+
+    myDir.setCurrent(path);
+    QFile file(input+"_data.csv");
+    file.open(QIODevice::WriteOnly);
+    QTextStream ts(&file);
+
+
+    //Save file data raw
+    QCPDataContainer<QCPGraphData> *data = t->data().data();
+
+    /*   foreach (QVector<QCPGraphData> i, data->begin()) {
+        qDebug() << i;
+        //ts << d.key << ";" << d.value;
+        //endl(ts);
+    }*/
+
+    file.close();
+
+    file.setFileName(input+"_screenshot.jpg");
+    file.open(QIODevice::WriteOnly);
+    QPixmap pix = g->grab(g->rect());
+
+    pix.save(&file,"jpg");
+
+    file.close();
+
 }
 
 void MainWindow::voltageChanged(double v)
