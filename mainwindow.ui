@@ -249,7 +249,20 @@
     <addaction name="actionInsertLegend"/>
     <addaction name="menuRemove"/>
    </widget>
+   <widget class="QMenu" name="menuLoad_Graph">
+    <property name="title">
+     <string>Load Graph</string>
+    </property>
+    <widget class="QMenu" name="menuRemoveGraph">
+     <property name="title">
+      <string>Remove</string>
+     </property>
+    </widget>
+    <addaction name="actionAjouterGraph"/>
+    <addaction name="menuRemoveGraph"/>
+   </widget>
    <addaction name="menuLegend"/>
+   <addaction name="menuLoad_Graph"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionInsertLegend">
@@ -258,6 +271,11 @@
    </property>
    <property name="shortcutContext">
     <enum>Qt::WindowShortcut</enum>
+   </property>
+  </action>
+  <action name="actionAjouterGraph">
+   <property name="text">
+    <string>Ajouter</string>
    </property>
   </action>
  </widget>

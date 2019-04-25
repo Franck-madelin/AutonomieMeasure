@@ -95,7 +95,6 @@ void MainWindow::insertLegend()
 
 void MainWindow::removeItemLegend()
 {
-
     QAction * a = static_cast<QAction*>(sender());
     QCPTextElement *item = a->data().value<QCPTextElement*>();
     g->legend->remove(item);
@@ -155,7 +154,7 @@ void MainWindow::save()
     {
         time=QTime(0,0,0,0);
         time = time.addMSecs(it->key*1000.0);
-        qDebug() << it->key << it->value << time.toString(s_formatTime);
+        //qDebug() << it->key << it->value << time.toString(s_formatTime);
         ts << it->key<<";"<<it->value << ";" <<time.toString(s_formatTime);
         endl(ts);
         it++;
@@ -361,7 +360,7 @@ void MainWindow::now(){
     QCPRange range = g->xAxis->range();
     //range.upper = (t->data().data()->end()-1)->key+1;
     //Test en %
-    range.upper = (t->data().data()->end()-1)->key+  g->xAxis->range().size()*0.1;
+    range.upper = (t->data().data()->end()-1)->key + g->xAxis->range().size()*0.02;
     range.lower = range.upper - g->xAxis->range().size();
     g->xAxis->setRange(range.upper, range.size(), Qt::AlignRight);
     t->rescaleValueAxis(false,true);
@@ -529,7 +528,9 @@ void MainWindow::initPlot()
     currentVoltageText->position->setCoords(1.0, 0); // upper right corner of axis rect
     currentVoltageText->setText("Tension : ?");
     currentVoltageText->setTextAlignment(Qt::AlignRight);
-    currentVoltageText->setFont(QFont("Utsaah", 9));
+    QFont f = s_fontUtsaah;
+    f.setBold(true);
+    currentVoltageText->setFont(f);
     currentVoltageText->setColor(Qt::red);
 
     // add arrow pointing at point tracer, coming from label:
@@ -675,7 +676,6 @@ void MainWindow::updateRangeYAxis(QCPRange)
 
 
 // CALL BACK YOCTOPUCE
-
 void MainWindow::deviceArrived(YModule *m)
 {
     switch (m->get_productId()) {
