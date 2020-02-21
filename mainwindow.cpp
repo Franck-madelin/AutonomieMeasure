@@ -684,7 +684,7 @@ void MainWindow::deviceArrived(YModule *m)
             return;
         _mainWindow->_moteur = yFindMotor(m->get_friendlyName());
         _mainWindow->_volt = yFindVoltage(m->get_friendlyName());
-        qDebug() << "[YOCTO] Sonde de tension trouvée ?" << _mainWindow->_volt;
+        qDebug() << "[YOCTO] Sonde de tension trouvée ?" << _mainWindow->_volt->get_friendlyName().c_str();
         _mainWindow->ui->record->setEnabled(true);
         _mainWindow->_volt->setResolution(0.001);
         _mainWindow->_volt->registerValueCallback(CBVolt);
